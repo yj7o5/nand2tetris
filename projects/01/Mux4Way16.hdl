@@ -9,6 +9,9 @@
  *       b if sel == 01
  *       c if sel == 10
  *       d if sel == 11
+ *
+ * note: 01 -> 0:1, 1:0
+ *       10 -> 0:0, 1:1
  */
 
 CHIP Mux4Way16 {
@@ -16,5 +19,10 @@ CHIP Mux4Way16 {
     OUT out[16];
 
     PARTS:
-    // Put your code here:
+    Not(in=sel[0], out=nots0);
+    And(a=sel[1], b=nots0, out=cout);
+    And(a=sel[1], b=sel[0], out=dout);
+    Mux16(a=a, b=b, sel=sel[0], out=out1); 
+    Mux16(a=out1, b=c, sel=cout, out=out2);
+    Mux16(a=out2, b=d, sel=dout, out=out);
 }
