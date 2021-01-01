@@ -1,3 +1,8 @@
 notes.txt
 tools
 *.swp
+
+# don't need the output/test/hack files
+*.out
+*.tst
+*.hack
