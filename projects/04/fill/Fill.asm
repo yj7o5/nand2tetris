@@ -13,49 +13,48 @@
 
 // Put your code here.
 
-(INIT)
-    @offset
-    M=0
+(INIT)      // INIT R0 WITH SCREEN OFFSET
+    @SCREEN
+    D=A
+    @R0     
+    M=D     
 
-(LOOP)
-    @offset
+(MAIN)
+    @R0     // IF R0=KBD RESET OFFSET
     D=M
-    @8192
+    @KBD
     D=D-A
     @INIT
-    D;JGT
+    D;JEQ
 
-    @24576
+    @KBD    // IF KEY PRESSED PAINT BLACK ELSE WHITE
     D=M
 
-    @BLACK
+    @BLACK  
     D;JGT
 
-    @WHITE
+    @WHITE  
     0;JMP
 
-(BLACK)
-    @SCREEN
-    D=A
-    @offset
-    A=D+M
-    M=1
+(INC)       // INCREMENT SCREEN OFFSET COUNTER
+    @R0
+    M=M+1   
 
-    @offset
-    M=M+1
-    
-    @LOOP
+    @MAIN
     0;JMP
 
-(WHITE)
-    @SCREEN
-    D=A
-    @offset
-    A=D+M
+(BLACK)     
+    @R0
+    A=M
+    M=-1
+
+    @INC
+    0;JMP
+
+(WHITE)    
+    @R0
+    A=M
     M=0
 
-    @offset
-    M=M+1
-
-    @LOOP
+    @INC
     0;JMP
