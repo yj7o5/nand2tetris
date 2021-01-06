@@ -87,10 +87,9 @@ CHIP CPU {
     Or(a=JLT, b=JGT, out=JNE);      // out != 0
 
     And(a=j1, b=j2, out=j12);     
-    And(a=j12, b=j3, out=JMP);      // jump
+    And(a=j12, b=j3, out=JMP);      // condition less jump
 
     Or8Way(
-        in[0]=false, 
         in[1]=JMP, 
         in[2]=JNE, 
         in[3]=JLE, 
