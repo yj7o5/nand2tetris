@@ -39,5 +39,67 @@ CHIP CPU {
         pc[15];          // address of next instruction
 
     PARTS:
-    // Put your code here:
+    // CONTROL BITS
+    Or16(a=instruction, b[0..15]=false,
+        out[0] = j3, out[1] = j2, out[2] = j1,
+        out[3] = d3, out[4] = d2, out[5] = d1,
+        out[6] = c6, out[7] = c5, out[8] = c4, out[9] = c3, out[10] = c2, out[11] = c1, 
+        out[12] = a,
+        out[15] = mode 
+    );
+
+    // mode=0 A-instruction
+    // mode=1 C-instruction
+    Mux16(a=instruction, b=ALUresult, sel=mode, out=outA);
+    
+    // write to A Register when mode=0 or d1=1
+    Not(in=mode, out=nmode);
+    Or(a=nmode, b=d1, out=loadA);
+    ARegister(in=outA, load=loadA, out=A, out[0..14]=addressM);          
+
+    // write to D Register when mode=1 and d2=1
+    And(a=mode, b=d2, out=loadD);
+    DRegister(in=ALUresult, load=loadD, out=D);                
+
+    // compute c1-c6
+    Mux16(a=A, b=inM, sel=a, out=AorM);
+    ALU(x=D, y=AorM, 
+        zx=c1, 
+        nx=c2, 
+        zy=c3, 
+        ny=c4, 
+        f=c5, 
+        no=c6, 
+        out=outM, out=ALUresult, 
+        zr=ALUzero, ng=ALUneg);
+
+    Or(a=ALUzero, b=ALUneg, out=p);
+    Not(in=p, out=ALUpos);
+
+    And(a=mode, b=d3, out=writeM);
+
+    // JUMP conditions
+    And(a=j3, b=ALUpos, out=JGT);   // out > 0
+    And(a=j2, b=ALUzero, out=JEQ);  // out == 0
+    And(a=j1, b=ALUneg, out=JLT);   // out < 0
+    Or(a=JLT, b=JEQ, out=JLE);      // out <= 0
+    Or(a=JGT, b=JEQ, out=JGE);      // out >= 0
+    Or(a=JLT, b=JGT, out=JNE);      // out != 0
+
+    And(a=j1, b=j2, out=j12);     
+    And(a=j12, b=j3, out=JMP);      // jump
+
+    Or8Way(
+        in[0]=false, 
+        in[1]=JMP, 
+        in[2]=JNE, 
+        in[3]=JLE, 
+        in[4]=JGE, 
+        in[5]=JLT, 
+        in[6]=JEQ, 
+        in[7]=JGT,
+        out=JUMP);
+    And(a=mode, b=JUMP, out=jumpPC);
+
+    PC(in=A, reset=reset, out[0..14]=pc, load=jumpPC, inc=true);
 }
