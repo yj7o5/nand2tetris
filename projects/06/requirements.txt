@@ -1,0 +1,6 @@
+Building assembler to translate .asm to .hack binary
+
+1. ~Add parser~
+2. First pass symbol-less
+3. Second pass translate symbols
+4. Write tests
