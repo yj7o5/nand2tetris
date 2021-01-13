@@ -15,7 +15,7 @@ class Parser:
         self._commands = []
 
         while (line := input_stream.readline()) != "":
-            self._commands.append(line.strip("\n"))
+            self._commands.append(line.strip("\n").strip())
 
     def hasMoreCommands(self):
         return bool(len(self._commands))
@@ -43,6 +43,7 @@ class Parser:
 
     def command_type(self):
         cmd = self._command
+
         if cmd.startswith("@"):
             return CommandType.A_COMMAND
         elif cmd.startswith("("):
@@ -66,14 +67,15 @@ class Parser:
         dst, _, _ = self._parse_command(self._command)
         ins = 0
 
-        if "M" in dst:
-            ins |= 0x1
-        elif "D" in dst:
-            ins |= 0x2
-        elif "A" in dst:
-            ins |= 0x8
+        if dst:
+            if "M" in dst:
+                ins |= 0x1
+            elif "D" in dst:
+                ins |= 0x2
+            elif "A" in dst:
+                ins |= 0x8
 
-        return bin(ins).repalce("0b", "").rjust(3, "0")
+        return bin(ins).replace("0b", "").rjust(3, "0")
 
     def comp(self):
         self._check_command(CommandType.C_COMMAND)
@@ -132,4 +134,14 @@ class Parser:
         return instructions[jmp] if jmp in instructions else nojump
 
     def _parse_command(self, cmd):
-        return re.match(r"(\w+=)?(\w+|\d+)(;\w+)?", self._command).groups()
+        cmd = cmd.strip("")
+        """
+        if _dest_ is empty, the "=" is omitted
+        if _jump_ is empty, the ";" is omitted
+        """
+        if not "=" in cmd:
+            p = cmd.split(";")
+            return (None, p[0].strip(), p[1].strip())
+        else:
+            p = cmd.split("=")
+            return (p[0].strip(), p[1].strip(), None)
