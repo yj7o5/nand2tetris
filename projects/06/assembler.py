@@ -2,69 +2,58 @@
 
 import os
 from parser import Parser
+from symbol_table import SymbolTable
 
 class Assembler:
     def __init__(self):
-        self.symbols = {
-            "SP": 0,
-            "LCL": 1,
-            "ARG": 2,
-            "THIS": 3,
-            "THAT": 4,
-            "SCREEN": 0x4000,
-            "KBD": 0x6000
-        }
+        self.symboltable = SymbolTable()
 
-        for i in range(0, 16):
-            reg = f"R{i}"
-            self.symbols[reg] = i
+    def assemble(self, code):
+        self._resolve_symbols(code)
 
-    def assemble(self, file):
-        self._resolve_symbols(file)
+        return "\n".join(self._translate(code))
 
-        return "\n".join(self._translate(file))
+    def _resolve_symbols(self, input_code):
+        input_code.seek(0)
+        parser = Parser(input_code)
 
-    # first pass resolve symbols
-    def _resolve_symbols(self, input_stream):
-        input_stream.seek(0)
-        parser = Parser(input_stream)
-
-        addr = 0
+        address = 0
         while parser.hasMoreCommands():
             parser.advance()
+            cmd_type = parser.command_type()
 
-            if parser.command_type() == Parser.L_COMMAND:
+            if cmd_type != Parser.L_COMMAND:
+                address += 1
+            else:
                 symbol = parser.symbol()
-                self.symbols[symbol] = addr
-                addr -= 1
+                self.symboltable.addEntry(symbol, address)
 
-            addr += 1
+    def _translate(self, input_code):
+        input_code.seek(0)
+        parser = Parser(input_code)
 
-    def _translate(self, input_stream):
-        input_stream.seek(0)
-        parser = Parser(input_stream)
-
-        var_offset = 16
+        variable_address = 16
         while parser.hasMoreCommands():
             parser.advance()
-            type = parser.command_type()
+            cmd_type = parser.command_type()
 
-            if type == Parser.L_COMMAND:
+            if cmd_type == Parser.L_COMMAND:
                 continue
 
-            if type == Parser.C_COMMAND:
+            if cmd_type == Parser.C_COMMAND:
                 instruction = f'111{parser.comp()}{parser.dest()}{parser.jump()}'
+
             else:
                 symbol = parser.symbol()
 
                 if symbol.isnumeric():
                     n = int(symbol)
-                elif symbol in self.symbols:
-                    n = self.symbols[symbol]
+                elif self.symboltable.contains(symbol):
+                    n = self.symboltable.getaddress(symbol)
                 else:
-                    n = var_offset
-                    self.symbols[symbol] = n
-                    var_offset += 1
+                    n = variable_address
+                    self.symboltable.addEntry(symbol, variable_address)
+                    variable_address += 1
 
                 instruction = f"{n:016b}"
 

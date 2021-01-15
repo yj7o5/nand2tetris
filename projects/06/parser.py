@@ -5,7 +5,7 @@ import code as Code
 class Parser:
     A_COMMAND = 0
     C_COMMAND = 1
-    L_COMMAND = 3
+    L_COMMAND = 2
 
     def __init__(self, input_stream):
         self._command = None
