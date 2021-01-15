@@ -5,12 +5,12 @@ def dest(mneumonic):
     if dst:
         if "M" in dst:
             ins |= 0x1
-        elif "D" in dst:
+        if "D" in dst:
             ins |= 0x2
-        elif "A" in dst:
-            ins |= 0x8
+        if "A" in dst:
+            ins |= 0x4
 
-    return bin(ins).replace("0b", "").rjust(3, "0")
+    return f"{ins:03b}"
 
 def comp(mneumonic):
     instructions = {

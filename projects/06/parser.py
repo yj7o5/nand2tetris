@@ -2,12 +2,10 @@
 
 import code as Code
 
-class CommandType:
-    A_COMMAND = "a_command"
-    C_COMMAND = "c_command"
-    L_COMMAND = "l_command"
-
 class Parser:
+    A_COMMAND = 0
+    C_COMMAND = 1
+    L_COMMAND = 3
 
     def __init__(self, input_stream):
         self._command = None
@@ -15,7 +13,13 @@ class Parser:
         self._commands = []
 
         while (line := input_stream.readline()) != "":
-            self._commands.append(line.strip("\n").strip())
+            self._commands.append(self._prune(line))
+
+    def _prune(self, cmd):
+        cmd = cmd.strip("\n")
+        if "//" in cmd:
+            cmd = cmd[0:cmd.index("//")]
+        return cmd.strip()
 
     def hasMoreCommands(self):
         return bool(len(self._commands))
@@ -45,17 +49,17 @@ class Parser:
         cmd = self._command
 
         if cmd.startswith("@"):
-            return CommandType.A_COMMAND
+            return Parser.A_COMMAND
         elif cmd.startswith("("):
-            return CommandType.L_COMMAND
+            return Parser.L_COMMAND
         else:
-            return CommandType.C_COMMAND
+            return Parser.C_COMMAND
 
     def symbol(self):
         c_type = self.command_type()
-        cmd = self._command[1:] if c_type == CommandType.A_COMMAND else self._command[1:-1]
+        cmd = self._command[1:] if c_type == Parser.A_COMMAND else self._command[1:-1]
 
-        return int(cmd) if cmd.isnumeric() else cmd
+        return cmd
 
     def dest(self):
         return Code.dest(self._command)
