@@ -4,9 +4,9 @@ from parser import Parser
 from code_writer import CodeGen
 
 code_gen = CodeGen()
-code_gen.set_file_name("./StackArithmetic/StackTest/StackTest.asm")
+code_gen.set_file_name("./MemoryAccess/BasicTest/BasicTest.asm")
 
-parser = Parser(open("./StackArithmetic/StackTest/StackTest.vm"))
+parser = Parser(open("./MemoryAccess/BasicTest/BasicTest.vm"))
 
 while parser.has_more_commands():
     parser.advance()

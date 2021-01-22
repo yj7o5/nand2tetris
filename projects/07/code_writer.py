@@ -36,6 +36,70 @@ class CodeGen:
 
         if segment == "constant":
             self._emit_constant(index)
+        else:
+            if cmd_type == Parser.C_PUSH:
+                self._emit_push_segment(segment, index)
+            else:
+                self._emit_pop_segment(segment, index)
+
+    segment_keywords = {"local": "LCL", "argument": "ARG", "this": "THIS", "that": "THAT", "temp": "Temp"}
+    def _emit_push_segment(self, segment, index):
+        reg = CodeGen.segment_keywords[segment]
+
+        if reg == "Temp":
+            reg = index+5
+            # take value from temp and store in D register
+            self._emit(f"""
+@{reg}
+D=M""")
+
+        else:
+            # take value from segment[index] and store in D register
+            self._emit(f"""
+@{reg}
+A=M
+D=A
+@{index}
+A=A+D
+D=M""")
+
+        # push onto stack value stored in D register
+        self._emit(f"""
+@SP
+A=M
+M=D""")
+
+        self._emit_increment("SP")
+
+    def _emit_pop_segment(self, segment, index):
+        reg = CodeGen.segment_keywords[segment]
+
+        if reg != "Temp":
+            # store segment[index] in R13
+            self._emit(f"""
+@{reg}
+A=M
+D=A
+@{index}
+D=A+D
+@R13
+M=D""")
+
+        # pop stack value into D
+        self._emit_pop("D")
+
+        if reg == "Temp":
+            reg = index + 5
+            # for Temp registers
+            self._emit(f"""
+@{reg}
+M=D""")
+        else:
+            # update segment[index] value
+            self._emit(f"""
+@R13
+A=M
+M=D""")
 
     def _emit_decrement(self, reg):
         self.output.write(f"""
