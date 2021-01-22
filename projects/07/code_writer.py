@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 from parser import Parser
 
 class CodeGen:
@@ -14,17 +16,20 @@ class CodeGen:
         self.output = open(name, "w")
 
     def write_arithmetic(self, cmd):
-        if cmd in ("neg", "not"):
+        unary = ("neg", "not")
+        binary = ("add", "sub", "and", "or")
+        compares = ("lt", "gt", "eq")
+
+        assert(cmd in unary or cmd in binary or cmd in compares)
+
+        if cmd in unary:
             self._emit_unary(cmd)
 
-        elif cmd in ("add", "sub", "and", "or"):
+        if cmd in binary:
             self._emit_binary(cmd)
 
-        elif cmd in ("lt", "gt", "eq"):
+        if cmd in compares:
             self._emit_comparison(cmd)
-
-        else:
-            raise Exception(f"unexpected arithmentic command: {cmd}")
 
     def write_push_pop(self, cmd_type, segment, index):
         assert(cmd_type == Parser.C_PUSH or cmd_type == Parser.C_POP)
@@ -56,14 +61,18 @@ A=M
             self._emit(f"""
 A=M
 M=!M""")
+            self._emit_increment("SP")
 
         if op == "neg":
-            self.write_push_pop(Parser.C_PUSH, "constant", 2**16)
-            self._emit_binary("sub")
+            self._emit_pop("D")
+            self._emit(f"""
+M=!D
+M=M+1""")
+            self._emit_increment("SP")
 
+    arithmentic_keywords = {"add": "+", "sub": "-", "and": "&", "or": "|"}
     def _emit_binary(self, op):
-        d = {"add": "+", "sub": "-", "and": "&", "or": "|"}
-        op = d[op]
+        op = CodeGen.arithmentic_keywords[op]
 
         self._emit_pop("D")
         self._emit_decrement("SP")
@@ -72,17 +81,18 @@ A=M
 M=M{op}D""")
         self._emit_increment("SP")
 
-    cmp_map = {"eq": "JEQ", "lt": "JLT", "gt": "JGT"}
+    jump_keywords = {"eq": "JEQ", "lt": "JLT", "gt": "JGT"}
     def _get_cmp_label(self, c):
-        cmp = CodeGen.cmp_map[c]
+        cmp = CodeGen.jump_keywords[c]
         self.cmp_counters[cmp] += 1
 
         label = f"LABEL_{cmp}_{self.cmp_counters[cmp]}"
         return label
 
     def _emit_comparison(self, cmp):
-        jmp = CodeGen.cmp_map[cmp]
+        jmp = CodeGen.jump_keywords[cmp]
         label = self._get_cmp_label(cmp)
+        exit_label = f"{label}_EXIT"
 
         self._emit_binary("sub")
         self._emit_decrement("SP")
@@ -96,12 +106,15 @@ D=A
 @SP
 A=M
 M=D
+@{exit_label}
+0;JMP
 ({label})
-@-1
-D=A
+@0
+D=!A
 @SP
 A=M
-M=D""")
+M=D
+({exit_label})""")
         self._emit_increment("SP")
 
     def _emit_constant(self, number):

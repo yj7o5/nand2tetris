@@ -41,7 +41,12 @@ class Parser:
     def command_type(self):
         cmd = self._command
 
-        if cmd in ("add", "sub", "neg", "eq", "lt", "gt", "and", "or", "not"):
+        arth_cmds = ("add", "sub", "neg", "eq", "lt", "gt", "and", "or", "not")
+        write_cmds = ("push", "pop")
+
+        assert((cmd in arth_cmds) or (cmd in write_cmds), "unrecognized command: %s" % cmd)
+
+        if cmd in arth_cmds:
             return Parser.C_ARITHMETIC
 
         if "push" in cmd:
@@ -49,8 +54,6 @@ class Parser:
 
         if "pop" in cmd:
             return Parser.C_POP
-
-        raise Exception(f"unhandled command type: {cmd}")
 
     def arg1(self):
         cmd = self._command
