@@ -2,7 +2,15 @@
 
 from parser import Parser
 
+"""
+Handles emitting of raw assembly code for the VM instructions as given by the parser
+"""
+
 class CodeGen:
+    REG_SEGMENTS = {"local": "LCL", "argument": "ARG", "this": "THIS", "that": "THAT", "temp": "Temp"}
+    OPERATORS = {"add": "+", "sub": "-", "and": "&", "or": "|"}
+    CONIDTIONALS = {"eq": "JEQ", "lt": "JLT", "gt": "JGT"}
+
     def __init__(self):
         self.output = None
         self.cmp_counters = {"JEQ": 0, "JGT": 0, "JLT": 0}
@@ -42,9 +50,30 @@ class CodeGen:
             else:
                 self._emit_pop_segment(segment, index)
 
-    segment_keywords = {"local": "LCL", "argument": "ARG", "this": "THIS", "that": "THAT", "temp": "Temp"}
     def _emit_push_segment(self, segment, index):
-        reg = CodeGen.segment_keywords[segment]
+
+        if segment == "pointer":
+            assert(index == 0 or index == 1)
+
+            segment = "this" if index == 0 else "that"
+            reg = CodeGen.REG_SEGMENTS[segment]
+
+            # get value from the pointer register into D
+            self._emit(f"""
+@{reg}
+D=M""")
+            # push D value onto the stack
+            self._emit(f"""
+@SP
+A=M
+M=D""")
+            self._emit_increment("SP")
+
+            return
+
+
+
+        reg = CodeGen.REG_SEGMENTS[segment]
 
         if reg == "Temp":
             reg = index+5
@@ -72,7 +101,24 @@ M=D""")
         self._emit_increment("SP")
 
     def _emit_pop_segment(self, segment, index):
-        reg = CodeGen.segment_keywords[segment]
+
+        if segment == "pointer":
+            assert(index == 0 or index == 1)
+
+            segment = "this" if index == 0 else "that"
+            reg = CodeGen.REG_SEGMENTS[segment]
+
+            # pop stack value into D register
+            self._emit_pop("D")
+
+            # set the desire pointer register value to D
+            self._emit(f"""
+@{reg}
+M=D""")
+
+            return
+
+        reg = CodeGen.REG_SEGMENTS[segment]
 
         if reg != "Temp":
             # store segment[index] in R13
@@ -134,9 +180,8 @@ M=!D
 M=M+1""")
             self._emit_increment("SP")
 
-    arithmentic_keywords = {"add": "+", "sub": "-", "and": "&", "or": "|"}
     def _emit_binary(self, op):
-        op = CodeGen.arithmentic_keywords[op]
+        op = CodeGen.OPERATORS[op]
 
         self._emit_pop("D")
         self._emit_decrement("SP")
@@ -145,16 +190,15 @@ A=M
 M=M{op}D""")
         self._emit_increment("SP")
 
-    jump_keywords = {"eq": "JEQ", "lt": "JLT", "gt": "JGT"}
     def _get_cmp_label(self, c):
-        cmp = CodeGen.jump_keywords[c]
+        cmp = CodeGen.CONIDTIONALS[c]
         self.cmp_counters[cmp] += 1
 
         label = f"LABEL_{cmp}_{self.cmp_counters[cmp]}"
         return label
 
     def _emit_comparison(self, cmp):
-        jmp = CodeGen.jump_keywords[cmp]
+        jmp = CodeGen.CONIDTIONALS[cmp]
         label = self._get_cmp_label(cmp)
         exit_label = f"{label}_EXIT"
 

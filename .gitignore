@@ -1,6 +1,7 @@
 notes.txt
 tools
 *.swp
+*.swo
 
 # don't need the output/test/hack files
 *.out
