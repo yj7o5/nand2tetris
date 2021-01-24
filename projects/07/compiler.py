@@ -5,7 +5,7 @@ from code_writer import CodeGen
 
 import sys
 
-DEFAULT_FILEPATH = "./MemoryAccess/PointerTest/PointerTest.vm"
+DEFAULT_FILEPATH = "./MemoryAccess/StaticTest/StaticTest.vm"
 
 def get_io_file():
     path = sys.argv[1] if len(sys.argv) > 1 else DEFAULT_FILEPATH

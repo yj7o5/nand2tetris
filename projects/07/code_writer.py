@@ -22,6 +22,7 @@ class CodeGen:
             raise Exception("output file name must of type \"asm\"")
 
         self.output = open(name, "w")
+        self._curr_filename = name.split("/")[-1].replace(".asm", "")
 
     def write_arithmetic(self, cmd):
         unary = ("neg", "not")
@@ -51,6 +52,18 @@ class CodeGen:
                 self._emit_pop_segment(segment, index)
 
     def _emit_push_segment(self, segment, index):
+        if segment == "static":
+            self._emit(f"""
+@{self._curr_filename}.{index}
+D=M""")
+            self._emit(f"""
+@SP
+A=M
+M=D""")
+
+            self._emit_increment("SP")
+
+            return
 
         if segment == "pointer":
             assert(index == 0 or index == 1)
@@ -101,6 +114,14 @@ M=D""")
         self._emit_increment("SP")
 
     def _emit_pop_segment(self, segment, index):
+        if segment == "static":
+            self._emit_pop("D")
+            self._emit(f"""
+@{self._curr_filename}.{index}
+M=D""")
+
+            return
+
 
         if segment == "pointer":
             assert(index == 0 or index == 1)
