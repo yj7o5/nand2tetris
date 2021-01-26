@@ -29,7 +29,7 @@ class CodeGen:
         binary = ("add", "sub", "and", "or")
         compares = ("lt", "gt", "eq")
 
-        assert(cmd in unary or cmd in binary or cmd in compares)
+        assert cmd in unary or cmd in binary or cmd in compares
 
         if cmd in unary:
             self._emit_unary(cmd)
@@ -41,7 +41,7 @@ class CodeGen:
             self._emit_comparison(cmd)
 
     def write_push_pop(self, cmd_type, segment, index):
-        assert(cmd_type == Parser.C_PUSH or cmd_type == Parser.C_POP)
+        assert cmd_type == Parser.C_PUSH or cmd_type == Parser.C_POP
 
         if segment == "constant":
             self._emit_constant(index)
@@ -52,52 +52,38 @@ class CodeGen:
                 self._emit_pop_segment(segment, index)
 
     def _emit_push_segment(self, segment, index):
+        # load the value into the D register
         if segment == "static":
+            # load the value at location {index} into the D register
             self._emit(f"""
 @{self._curr_filename}.{index}
 D=M""")
-            self._emit(f"""
-@SP
-A=M
-M=D""")
 
-            self._emit_increment("SP")
-
-            return
-
-        if segment == "pointer":
-            assert(index == 0 or index == 1)
+        elif segment == "pointer":
+            assert index == 0 or index == 1
 
             segment = "this" if index == 0 else "that"
             reg = CodeGen.REG_SEGMENTS[segment]
 
-            # get value from the pointer register into D
-            self._emit(f"""
-@{reg}
-D=M""")
-            # push D value onto the stack
-            self._emit(f"""
-@SP
-A=M
-M=D""")
-            self._emit_increment("SP")
-
-            return
-
-
-
-        reg = CodeGen.REG_SEGMENTS[segment]
-
-        if reg == "Temp":
-            reg = index+5
-            # take value from temp and store in D register
+            # load the value at register "this" or "that" into D register
             self._emit(f"""
 @{reg}
 D=M""")
 
         else:
-            # take value from segment[index] and store in D register
-            self._emit(f"""
+
+            reg = CodeGen.REG_SEGMENTS[segment]
+
+            if reg == "Temp":
+                reg = index+5
+                # load the value at register {index} + offset into D
+                self._emit(f"""
+@{reg}
+D=M""")
+
+            else:
+                # load the value from segment {index} and store in D register
+                self._emit(f"""
 @{reg}
 A=M
 D=A
@@ -111,6 +97,7 @@ D=M""")
 A=M
 M=D""")
 
+        # bump the SP pointer
         self._emit_increment("SP")
 
     def _emit_pop_segment(self, segment, index):
@@ -120,11 +107,8 @@ M=D""")
 @{self._curr_filename}.{index}
 M=D""")
 
-            return
-
-
-        if segment == "pointer":
-            assert(index == 0 or index == 1)
+        elif segment == "pointer":
+            assert index == 0 or index == 1
 
             segment = "this" if index == 0 else "that"
             reg = CodeGen.REG_SEGMENTS[segment]
@@ -137,13 +121,12 @@ M=D""")
 @{reg}
 M=D""")
 
-            return
+        else:
+            reg = CodeGen.REG_SEGMENTS[segment]
 
-        reg = CodeGen.REG_SEGMENTS[segment]
-
-        if reg != "Temp":
-            # store segment[index] in R13
-            self._emit(f"""
+            if reg != "Temp":
+                # store segment {index} in R13
+                self._emit(f"""
 @{reg}
 A=M
 D=A
@@ -152,18 +135,18 @@ D=A+D
 @R13
 M=D""")
 
-        # pop stack value into D
-        self._emit_pop("D")
+            # pop stack value into D
+            self._emit_pop("D")
 
-        if reg == "Temp":
-            reg = index + 5
-            # for Temp registers
-            self._emit(f"""
+            if reg == "Temp":
+                reg = index + 5
+                # for Temp registers
+                self._emit(f"""
 @{reg}
 M=D""")
-        else:
-            # update segment[index] value
-            self._emit(f"""
+            else:
+                # update segment[index] value
+                self._emit(f"""
 @R13
 A=M
 M=D""")

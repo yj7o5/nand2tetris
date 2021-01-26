@@ -7,6 +7,8 @@ import sys
 
 DEFAULT_FILEPATH = "./MemoryAccess/StaticTest/StaticTest.vm"
 
+print(sys.argv[1])
+
 def get_io_file():
     path = sys.argv[1] if len(sys.argv) > 1 else DEFAULT_FILEPATH
 

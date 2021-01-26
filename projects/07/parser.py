@@ -15,6 +15,9 @@ class Parser:
     C_RETURN = 7
     C_CALL = 8
 
+    ARTHMETIC_OPS = ("add", "sub", "neg", "eq", "lt", "gt", "and", "or", "not")
+    STACK_OPS = ("push", "pop")
+
     def __init__(self, lines):
         self._command = None
         self._commands = []
@@ -41,12 +44,11 @@ class Parser:
     def command_type(self):
         cmd = self._command
 
-        arth_cmds = ("add", "sub", "neg", "eq", "lt", "gt", "and", "or", "not")
-        write_cmds = ("push", "pop")
+        first_op = cmd.split(" ")[0]
 
-        assert((cmd in arth_cmds) or (cmd in write_cmds), "unrecognized command: %s" % cmd)
+        assert first_op in (Parser.ARTHMETIC_OPS + Parser.STACK_OPS), "unrecognized command: %s" % cmd
 
-        if cmd in arth_cmds:
+        if cmd in Parser.ARTHMETIC_OPS:
             return Parser.C_ARITHMETIC
 
         if "push" in cmd:
