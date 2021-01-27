@@ -42,4 +42,7 @@ while parser.has_more_commands():
     if cmd_type == Parser.C_IF:
         code_gen.write_if(parser.arg1())
 
+    if cmd_type == Parser.C_GOTO:
+        code_gen.write_goto(parser.arg1())
+
 code_gen.close()

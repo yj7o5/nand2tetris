@@ -32,7 +32,9 @@ class CodeGen:
 ({label})""")
 
     def write_goto(self, label):
-        pass
+        self._emit(f"""
+@{label}
+0;JMP""")
 
     def write_if(self, label):
         self._emit_pop("D")
