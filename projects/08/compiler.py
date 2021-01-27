@@ -36,4 +36,10 @@ while parser.has_more_commands():
     if cmd_type == Parser.C_PUSH or cmd_type == Parser.C_POP:
         code_gen.write_push_pop(cmd_type, parser.arg1(), parser.arg2())
 
+    if cmd_type == Parser.C_LABEL:
+        code_gen.write_label(parser.arg1())
+
+    if cmd_type == Parser.C_IF:
+        code_gen.write_if(parser.arg1())
+
 code_gen.close()

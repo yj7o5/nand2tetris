@@ -24,6 +24,31 @@ class CodeGen:
         self.output = open(name, "w")
         self._curr_filename = name.split("/")[-1].replace(".asm", "")
 
+    def write_init(self):
+        pass
+
+    def write_label(self, label):
+        self._emit(f"""
+({label})""")
+
+    def write_goto(self, label):
+        pass
+
+    def write_if(self, label):
+        self._emit_pop("D")
+        self._emit(f"""
+@{label}
+D;JNE""")
+
+    def write_call(self, func_name, argc):
+        pass
+
+    def write_return(self):
+        pass
+
+    def write_func(self, func_name, localc):
+        pass
+
     def write_arithmetic(self, cmd):
         unary = ("neg", "not")
         binary = ("add", "sub", "and", "or")
