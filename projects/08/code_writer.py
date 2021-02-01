@@ -4,6 +4,8 @@ from parser import Parser
 
 """
 Handles emitting of raw assembly code for the VM instructions as given by the parser
+
+# TODO: modularize such that read/write to a segment from a location / to a location is abstract
 """
 
 class CodeGen:
@@ -46,10 +48,76 @@ D;JNE""")
         pass
 
     def write_return(self):
-        pass
+        """
+        restoring segments for caller function
+        """
+        # FRAME = LCL - store in R13 register
+        self._emit(f"""
+@LCL
+D=M
+@R13
+M=D""")
 
-    def write_func(self, func_name, localc):
-        pass
+        # RET = *(FRAME - 5) - store in R14 register
+        self._emit_set_reg("R14", 5)
+
+        # *ARG = pop()
+        self._emit_pop("D")
+        self._emit(f"""
+@ARG
+A=M
+M=D""")
+
+        # SP = ARG+1
+        self._emit(f"""
+@ARG
+D=M+1
+@SP
+M=D""")
+
+        # THAT = *(FRAME - 1)
+        self._emit_set_reg("THAT", 1)
+
+        # THIS = *(FRAME - 2)
+        self._emit_set_reg("THIS", 2)
+
+        # ARG = *(FRAME - 3)
+        self._emit_set_reg("ARG", 3)
+
+        # LCL = *(FRAME - 4)
+        self._emit_set_reg("LCL", 4)
+
+        # goto RET
+        self._emit(f"""
+@R14
+A=M
+0;JMP""")
+
+
+    def _emit_set_reg(self, register, frame_offset):
+        self._emit(f"""
+@{frame_offset}
+D=A
+@R13
+D=M-D
+A=D
+D=M
+@{register}
+M=D""")
+
+
+
+    def write_func(self, name, localc):
+        self.write_label(f"function${name}")
+        # init local segments to 0
+        for index in range(localc):
+            self._emit(f"""
+@LCL
+D=M
+@{index}
+A=D+A
+M=0
+""")
 
     def write_arithmetic(self, cmd):
         unary = ("neg", "not")

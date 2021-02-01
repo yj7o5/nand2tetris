@@ -63,8 +63,14 @@ class Parser:
         elif first_op == "if-goto":
             return Parser.C_IF
 
+        elif first_op == "function":
+            return Parser.C_FUNCTION
+
+        elif first_op == "return":
+            return Parser.C_RETURN
+
         else:
-            assert False, "unexpected command: " % cmd
+            assert False, f"unexpected command: {cmd}"
 
     def arg1(self):
         cmd = self._command

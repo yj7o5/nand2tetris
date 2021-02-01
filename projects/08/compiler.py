@@ -45,4 +45,10 @@ while parser.has_more_commands():
     if cmd_type == Parser.C_GOTO:
         code_gen.write_goto(parser.arg1())
 
+    if cmd_type == Parser.C_FUNCTION:
+        code_gen.write_func(parser.arg1(), parser.arg2())
+
+    if cmd_type == Parser.C_RETURN:
+        code_gen.write_return()
+
 code_gen.close()
