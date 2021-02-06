@@ -4,51 +4,71 @@ from parser import Parser
 from code_writer import CodeGen
 
 import sys
+import os
 
-DEFAULT_FILEPATH = "./MemoryAccess/StaticTest/StaticTest.vm"
+assert (len(sys.argv) > 1)
 
-print(sys.argv[1])
+path = sys.argv[1]
 
-def get_io_file():
-    path = sys.argv[1] if len(sys.argv) > 1 else DEFAULT_FILEPATH
+output_filename = None
+source_files = None
 
-    assert path.endswith(".vm")
+if os.path.isdir(path):
+    path = path.rstrip("/")
 
-    output_path = path.replace(".vm", ".asm").strip()
+    source_files = [(path + "/" + file) for file in os.listdir(path) if file.endswith(".vm")]
 
-    return (path, output_path)
+    assert len(source_files) > 0, f"path contains no .vm files: {path}"
 
-(_input_file, _output_file) = get_io_file()
+    name = path.split("/")[-1]
+    output_filename = f"{path}/{name}.asm"
 
-code_gen = CodeGen()
-code_gen.set_file_name(_output_file)
+else:
 
-parser = Parser(open(_input_file))
+    assert path.endswith(".vm"), f"invalid file; expected .vm file"
 
-while parser.has_more_commands():
-    parser.advance()
+    source_files = [path]
+    output_filename = path.replace(".vm", ".asm").strip()
 
-    cmd_type = parser.command_type()
+with open(output_filename, "w") as outputfile:
+    code_gen = CodeGen(outputfile)
 
-    if cmd_type == Parser.C_ARITHMETIC:
-        code_gen.write_arithmetic(parser.arg1())
+    if any([file.endswith("Sys.vm") for file in source_files]):
+        code_gen.write_init()
 
-    if cmd_type == Parser.C_PUSH or cmd_type == Parser.C_POP:
-        code_gen.write_push_pop(cmd_type, parser.arg1(), parser.arg2())
+    for source_file in source_files:
+        parser = Parser(open(source_file))
 
-    if cmd_type == Parser.C_LABEL:
-        code_gen.write_label(parser.arg1())
+        src_filename = source_file.split("/")[-1].replace(".vm", "")
+        code_gen.set_file_name(src_filename)
 
-    if cmd_type == Parser.C_IF:
-        code_gen.write_if(parser.arg1())
+        while parser.has_more_commands():
+            parser.advance()
 
-    if cmd_type == Parser.C_GOTO:
-        code_gen.write_goto(parser.arg1())
+            cmd_type = parser.command_type()
 
-    if cmd_type == Parser.C_FUNCTION:
-        code_gen.write_func(parser.arg1(), parser.arg2())
+            if cmd_type == Parser.C_ARITHMETIC:
+                code_gen.write_arithmetic(parser.arg1())
 
-    if cmd_type == Parser.C_RETURN:
-        code_gen.write_return()
+            if cmd_type == Parser.C_PUSH or cmd_type == Parser.C_POP:
+                code_gen.write_push_pop(cmd_type, parser.arg1(), parser.arg2())
 
-code_gen.close()
+            if cmd_type == Parser.C_LABEL:
+                code_gen.write_label(parser.arg1())
+
+            if cmd_type == Parser.C_IF:
+                code_gen.write_if(parser.arg1())
+
+            if cmd_type == Parser.C_GOTO:
+                code_gen.write_goto(parser.arg1())
+
+            if cmd_type == Parser.C_FUNCTION:
+                code_gen.write_func(parser.arg1(), parser.arg2())
+
+            if cmd_type == Parser.C_RETURN:
+                code_gen.write_return()
+
+            if cmd_type == Parser.C_CALL:
+                code_gen.write_call(parser.arg1(), parser.arg2())
+
+print(f"\033[92m\033[1mCompiled file\033[0m: {output_filename}")

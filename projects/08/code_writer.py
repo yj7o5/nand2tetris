@@ -13,39 +13,108 @@ class CodeGen:
     OPERATORS = {"add": "+", "sub": "-", "and": "&", "or": "|"}
     CONIDTIONALS = {"eq": "JEQ", "lt": "JLT", "gt": "JGT"}
 
-    def __init__(self):
+    def __init__(self, outstream):
         self.output = None
         self.cmp_counters = {"JEQ": 0, "JGT": 0, "JLT": 0}
+        self._ret_count = 0
+        self._current_func = None
+        self.output = outstream
 
     def set_file_name(self, name):
-        self.close()
+        self._curr_filename = name
 
-        if not name.endswith(".asm"):
-            raise Exception("output file name must of type \"asm\"")
-
-        self.output = open(name, "w")
-        self._curr_filename = name.split("/")[-1].replace(".asm", "")
+    def get_next_ret_label(self):
+        self._ret_count += 1
+        return f"""return_address_{self._ret_count}"""
 
     def write_init(self):
-        pass
+        self._set_register("SP", 0x100)
+
+        self.write_goto("Sys.init")
+
+    def _get_label(self, label):
+        return label if self._current_func == None else f"{self._current_func}${label}"
 
     def write_label(self, label):
+        # each label generates a funcName$label symbol
+        label = self._get_label(label)
         self._emit(f"""
 ({label})""")
 
     def write_goto(self, label):
+        label = self._get_label(label)
         self._emit(f"""
 @{label}
 0;JMP""")
 
     def write_if(self, label):
+        label = self._get_label(label)
         self._emit_pop("D")
         self._emit(f"""
 @{label}
 D;JNE""")
 
     def write_call(self, func_name, argc):
-        pass
+        # call f n
+        # - push return-address, LCL, ARG, THIS, THAT
+        # - ARG = SP - n - 5
+        # - LCL = SP
+        # - goto f
+        # (return-address) label
+
+        ret_label = self.get_next_ret_label()
+        # push return-address
+        # self._set_register_pointer("SP", ret_label)
+        self._emit(f"""
+@{ret_label}
+D=A
+@SP
+A=M
+M=D""")
+        self._emit_increment("SP")
+
+        # push LCL
+        self._set_register_pointer("SP", "LCL")
+        self._emit_increment("SP")
+
+        # push ARG
+        self._set_register_pointer("SP", "ARG")
+        self._emit_increment("SP")
+
+        # push THIS
+        self._set_register_pointer("SP", "THIS")
+        self._emit_increment("SP")
+
+        # push THAT
+        self._set_register_pointer("SP", "THAT")
+        self._emit_increment("SP")
+
+        # set ARG = SP-n-5
+        self._emit(f"""
+@SP
+D=M
+@{argc}
+D=D-A
+@5
+D=D-A
+@ARG
+M=D""")
+
+        # set LCL = SP
+        self._emit(f"""
+@SP
+D=M
+@LCL
+M=D""")
+
+        # self.write_goto(func_name)
+        self._emit(f"""
+@{func_name}
+0;JMP""")
+
+        # self.write_label(ret_label)
+        self._emit(f"""
+({ret_label})""")
 
     def write_return(self):
         """
@@ -105,10 +174,12 @@ D=M
 @{register}
 M=D""")
 
-
-
     def write_func(self, name, localc):
-        self.write_label(f"function${name}")
+        self._current_func = name
+
+        # generate (FunctionName) label
+        self._emit(f"""
+({name})""")
         # init local segments to 0
         for index in range(localc):
             self._emit(f"""
@@ -116,8 +187,7 @@ M=D""")
 D=M
 @{index}
 A=D+A
-M=0
-""")
+M=0""")
 
     def write_arithmetic(self, cmd):
         unary = ("neg", "not")
@@ -333,11 +403,22 @@ A=M
 M=D""")
         self._emit_increment("SP")
 
+    def _set_register(self, register, value):
+        self._emit(f"""
+@{value}
+D=A
+@{register}
+M=D""")
+
+    def _set_register_pointer(self, register, pointer):
+        self._emit(f"""
+@{pointer}
+D=M
+@{register}
+A=M
+M=D""")
+
     def _emit(self, code):
+        if not self.output:
+            raise Exception("no output file defined")
         self.output.write(code)
-
-    def close(self):
-        if self.output:
-            self.output.close()
-
-        self.output = None

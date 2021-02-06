@@ -69,6 +69,9 @@ class Parser:
         elif first_op == "return":
             return Parser.C_RETURN
 
+        elif first_op == "call":
+            return Parser.C_CALL
+
         else:
             assert False, f"unexpected command: {cmd}"
 
