@@ -33,11 +33,11 @@ else:
 with open(output_filename, "w") as outputfile:
     code_gen = CodeGen(outputfile)
 
-    if any([file.endswith("Sys.vm") for file in source_files]):
-        code_gen.write_init()
-
     for source_file in source_files:
         parser = Parser(open(source_file))
+
+        if source_file.endswith("Sys.vm"):
+            code_gen.write_init()
 
         src_filename = source_file.split("/")[-1].replace(".vm", "")
         code_gen.set_file_name(src_filename)

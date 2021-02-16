@@ -28,9 +28,10 @@ class CodeGen:
         return f"""return_address_{self._ret_count}"""
 
     def write_init(self):
-        self._set_register("SP", 0x100)
+        # self._set_register("SP", 0x100)
 
-        self.write_goto("Sys.init")
+        # self.write_call("Sys.init", 0)
+        pass
 
     def _get_label(self, label):
         return label if self._current_func == None else f"{self._current_func}${label}"
@@ -181,13 +182,12 @@ M=D""")
         self._emit(f"""
 ({name})""")
         # init local segments to 0
-        for index in range(localc):
+        for _ in range(localc):
             self._emit(f"""
-@LCL
-D=M
-@{index}
-A=D+A
+@SP
+A=M
 M=0""")
+            self._emit_increment("SP")
 
     def write_arithmetic(self, cmd):
         unary = ("neg", "not")
