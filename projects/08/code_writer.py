@@ -4,6 +4,7 @@ from parser import Parser
 
 """
 Handles emitting of raw assembly code for the VM instructions as given by the parser
+Not the most wonderful looking piece of code :|
 
 # TODO: modularize such that read/write to a segment from a location / to a location is abstract
 """
@@ -28,9 +29,9 @@ class CodeGen:
         return f"""return_address_{self._ret_count}"""
 
     def write_init(self):
-        # self._set_register("SP", 0x100)
+        self._set_register("SP", 0x100)
 
-        # self.write_call("Sys.init", 0)
+        self.write_call("Sys.init", 0)
         pass
 
     def _get_label(self, label):
